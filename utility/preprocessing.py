@@ -1,38 +1,41 @@
 import os
 import cv2
+from convert import bit16_dicom_to_bit16_png, bit16_to_bit8_png
 
 class Preprocessing:
 
-  def __init__(self, image, file_path):
-    self.image = image # image/matrix with 8-bit or 16-bit values
-    self.file_path = file_path 
+  def __init__(self, image, src_path, dist_path):
+    self.src_path = src_path
+    self.dist_path = dist_path
+    self.image = image
     self.dtype = self.image.dtype # uint8, uint16
     self.format = self.get_format() # PNG, DICOM,...
-    self.modified_image = None # preprocessed image/matrix 
-
-  def get_image(self):
-    return self.image
-  
-  def get_modified_image(self):
-    return self.modified_image
   
   def get_format(self):
-    return os.path.splitext(self.file_path)[1].upper()[1:]
-  
-  def get_extracted_breast_from_mammogram(self):
-    self.modified_image = extract_breast_from_mammogram(self.image)
+    return os.path.splitext(self.src_path)[1].upper()[1:]
   
   def process_image(self):
-    if self.dtype == 'uint8':
-      # TO-DO
-      pass
+    if self.format == 'DICOM':
+      self.image = bit16_dicom_to_bit16_png(self.image) 
+      self.image = bit16_to_bit8_png(self.image)
+      self.image = extract_breast_from_mammogram(self.image)
+      self.image = resize_image(self.image)
+      cv2.imwrite(self.dist_path, self.image)
+
     elif self.dtype == 'uint16':
-      # TO-DO
-      pass
+      self.image = bit16_to_bit8_png(self.image)
+      self.image = extract_breast_from_mammogram(self.image)
+      self.image = resize_image(self.image)
+      cv2.imwrite(self.dist_path, self.image)
+    elif self.dtype == 'uint8':
+      self.image = extract_breast_from_mammogram(self.image)
+      self.image = resize_image(self.image)
+      cv2.imwrite(self.dist_path, self.image)
     else:
       print("Weird datatype: " + self.dtype)
 
 def extract_breast_from_mammogram(image):
+
   # Crop the image to remove any black space on the right side
   gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
   _, thresh = cv2.threshold(gray, 1, 255, cv2.THRESH_BINARY)
@@ -59,6 +62,15 @@ def extract_breast_from_mammogram(image):
   breast_only = cv2.bitwise_and(image, mask)
 
   return breast_only
+
+def resize_image(path, SIZE):
+  image = cv2.imread(path, cv2.IMREAD_UNCHANGED)
+  size = (SIZE,SIZE) if size else (image.shape[1], image.shape[0])
+  squared_image = cv2.resize(image[:], size)
+
+  return squared_image
+
+
 
 
 

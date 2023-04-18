@@ -1,15 +1,12 @@
 import cv2
 import numpy as np
 import pydicom
+from pydicom import FileDataset
 
-def bit16_dicom_to_bit8_png(dicom_file, png_file):
-  dicom_image = pydicom.dcmread(dicom_file)
-  pixel_data = dicom_image.pixel_array.astype(np.uint16)
-  image_8bit = cv2.normalize(pixel_data, None, 0, 255, cv2.NORM_MINMAX, cv2.CV_8UC1)
-  cv2.imwrite(png_file, image_8bit)
+def bit16_dicom_to_bit16_png(image):
+  png_16bit = image.pixel_array.astype(np.uint16)
+  return png_16bit
 
-def convert_16bit_to_8bit_png(input_file, output_file):
-
-  image = cv2.imread(input_file, cv2.IMREAD_UNCHANGED)
-  image_8bit = cv2.normalize(image, None, 0, 255, cv2.NORM_MINMAX, cv2.CV_8UC1)
-  cv2.imwrite(output_file, image_8bit)
+def bit16_to_bit8_png(image):
+  png_8bit = cv2.normalize(image, None, 0, 255, cv2.NORM_MINMAX, cv2.CV_8UC1)
+  return png_8bit

@@ -1,6 +1,7 @@
 import os
 import cv2
-from convert import bit16_dicom_to_bit16_png, bit16_to_bit8_png
+import numpy as np
+from utility.convert import bit16_dicom_to_bit16_png, bit16_to_bit8_png
 
 class Preprocessing:
 
@@ -8,70 +9,61 @@ class Preprocessing:
     self.src_path = src_path
     self.dist_path = dist_path
     self.image = image
-    self.dtype = self.image.dtype # uint8, uint16
     self.format = self.get_format() # PNG, DICOM,...
+    self.dtype = None if self.format == 'DCM' else self.image.dtype # uint8, uint16
   
   def get_format(self):
-    return os.path.splitext(self.src_path)[1].upper()[1:]
+    ext = "." + os.path.splitext(self.src_path)[1].upper()[1:]
+    return ext.lower()
   
   def process_image(self):
-    if self.format == 'DICOM':
-      self.image = bit16_dicom_to_bit16_png(self.image) 
-      self.image = bit16_to_bit8_png(self.image)
-      self.image = extract_breast_from_mammogram(self.image)
-      self.image = resize_image(self.image)
-      cv2.imwrite(self.dist_path, self.image)
+    if self.format == '.dcm':
+      self.image = bit16_dicom_to_bit16_png(self.image)[0]
+      self.format = bit16_dicom_to_bit16_png(self.image)[1]
+      self.image = np.fliplr(self.image) if 'R' in self.src_path else self.image
+      self.image = bit16_to_bit8_png(self.image)[0]
+      self.image = cut_and_resize_image(self.image)
+      dist_path = os.path.splitext(self.dist_path)[0] + self.format
+      cv2.imwrite(dist_path, self.image)
 
     elif self.dtype == 'uint16':
-      self.image = bit16_to_bit8_png(self.image)
-      self.image = extract_breast_from_mammogram(self.image)
-      self.image = resize_image(self.image)
+      self.image = bit16_to_bit8_png(self.image)[0]
+      self.format = bit16_to_bit8_png(self.image)[1]
+      self.image = cut_and_resize_image(self.image)
       cv2.imwrite(self.dist_path, self.image)
 
     elif self.dtype == 'uint8':
-      self.image = extract_breast_from_mammogram(self.image)
-      self.image = resize_image(self.image)
+      self.image = cut_and_resize_image(self.image)
       cv2.imwrite(self.dist_path, self.image)
       
     else:
       print("Weird datatype: " + self.dtype)
 
-def extract_breast_from_mammogram(image):
+def cut_and_resize_image(image, SIZE=512):
+  max_x = 0
+  max_y = 0
+  img = image.tolist()
+  cut_threshold = int(0.20 * image.shape[1])
 
-  # Crop the image to remove any black space on the right side
-  gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-  _, thresh = cv2.threshold(gray, 1, 255, cv2.THRESH_BINARY)
-  contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-  x, y, w, h = cv2.boundingRect(contours[0])
-  image = image[y:y+h, x:x+w]
+  for i in range(image.shape[0]):
+    for j in range(image.shape[1]-1, 0, -1):
+      if img[i][j] != 0 and j > max_x:
+        max_x = j
+        break
+  
+  for i in range(cut_threshold,image.shape[1]):
+    for j in range(image.shape[0]-1, 0, -1):
+      if img[j][i] != 0 and j > max_y: # j, i ker so koordinate y,x
+        max_y = j
+        break
 
-  # Convert to grayscale
-  gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
-  # Apply thresholding to binarize the image
-  _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)
-
-  # Find contours in the image
-  contours, hierarchy = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-  # Find the contour with the largest area (the breast)
-  largest_contour = max(contours, key=cv2.contourArea)
-
-  # Create a mask from the largest contour
-  mask = cv2.drawContours(image.copy(), [largest_contour], -1, (255, 255, 255), -1)
-
-  # Apply the mask to the original image to extract the breast
-  breast_only = cv2.bitwise_and(image, mask)
-
-  return breast_only
-
-def resize_image(path, SIZE):
-  image = cv2.imread(path, cv2.IMREAD_UNCHANGED)
-  size = (SIZE,SIZE) if size else (image.shape[1], image.shape[0])
-  squared_image = cv2.resize(image[:], size)
+  size = (SIZE,SIZE) if SIZE else (image.shape[1], image.shape[0])
+  squared_image = cv2.resize(image[0:max_y,0:max_x], size)
 
   return squared_image
 
+def is_grayscale(image):
+  return image.ndim == 2
 
 
 

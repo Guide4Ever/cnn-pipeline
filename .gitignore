@@ -127,3 +127,7 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+data/INbreast_mammograms
+data/INbreast_mammograms_MLO
+data/INbreast_mammograms_MLO_proc

@@ -14,7 +14,7 @@ def copy_files_containing_mlo(source_dir, dest_dir, OVERWRITE_IMAGES=False):
     os.mkdir(dest_dir)
 
   for file_name in os.listdir(source_dir):
-    if "MLO" in file_name:
+    if "ML" in file_name:
       src_file = os.path.join(source_dir, file_name)
       dst_file = os.path.join(dest_dir, file_name)
       shutil.copy2(src_file, dst_file)

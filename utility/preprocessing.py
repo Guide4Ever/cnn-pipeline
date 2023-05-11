@@ -27,10 +27,12 @@ class Preprocessing:
       self.image = extract_breast_from_mammogram(self.image)
       self.image = resize_image(self.image)
       cv2.imwrite(self.dist_path, self.image)
+
     elif self.dtype == 'uint8':
       self.image = extract_breast_from_mammogram(self.image)
       self.image = resize_image(self.image)
       cv2.imwrite(self.dist_path, self.image)
+      
     else:
       print("Weird datatype: " + self.dtype)
 

@@ -2,6 +2,7 @@ import cv2
 import os
 from utility.preprocessing import Preprocessing
 import pydicom
+import numpy as np
 
 
 #def filter_images():
@@ -16,7 +17,6 @@ import pydicom
 #  cv2.imshow('Breast Only', breast_only)
 #  cv2.waitKey(0)
 #  cv2.destroyAllWindows()
-
 
 def main():
   src_dir = 'data\INbreast_mammograms_MLO'

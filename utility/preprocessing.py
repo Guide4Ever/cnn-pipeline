@@ -9,7 +9,7 @@ class Preprocessing:
     self.src_path = src_path
     self.dist_path = dist_path
     self.image = image
-    self.format = self.get_format() # PNG, DICOM,...
+    self.format = self.get_format() # .png, .dcm,...
     self.dtype = None if self.format == '.dcm' else self.image.dtype # uint8, uint16
   
   def get_format(self):
@@ -20,7 +20,6 @@ class Preprocessing:
     if self.format == '.dcm':
       [self.image, self.format] = bit16_dicom_to_bit16_png(self.image)
       self.image = np.fliplr(self.image) if 'R' in self.src_path else self.image
-      #self.image = bit16_to_bit8_png(self.image)[0]
       self.image = cut_and_resize_image(self.image)
       dist_path = os.path.splitext(self.dist_path)[0] + self.format
       cv2.imwrite(dist_path, self.image)

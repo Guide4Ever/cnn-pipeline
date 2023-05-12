@@ -1,8 +1,5 @@
 import cv2
 import os
-#from utility.preprocessing import extract_breast_from_mammogram
-#from utility.convert import bit16_dicom_to_bit16_png
-#from utility.filter import copy_files_containing_mlo
 from utility.preprocessing import Preprocessing
 import pydicom
 
@@ -29,6 +26,5 @@ def main():
     image= pydicom.dcmread(os.path.join(src_dir, file_name))
     obj = Preprocessing(image=image, src_path=os.path.join(src_dir, file_name), dist_path=os.path.join(dst_dir, file_name))
     obj.process_image()
-
 if __name__ == '__main__':
   main()
